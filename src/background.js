@@ -1,21 +1,79 @@
-'use strict';
+import { PAPAGO_CLIENT_ID, PAPAGO_CLIENT_SECRET } from './env.js';
 
-// With background scripts you can communicate with popup
-// and contentScript files.
-// For more information on background script,
-// See https://developer.chrome.com/extensions/background_pages
+const DOM_PARSER_OFFSCREEN_PATH = 'domParser.html';
+
+chrome.commands.onCommand.addListener((command) => {
+  chrome.storage.local.get(['isDict'], (result) => {
+    if (result.isDict === false) chrome.storage.local.set({ isDict: true });
+    else chrome.storage.local.set({ isDict: false });
+  });
+});
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'GREETINGS') {
-    const message = `Hi ${
-      sender.tab ? 'Con' : 'Pop'
-    }, my name is Bac. I am from Background. It's great to hear from you.`;
+  const { msg, isDict, results, status } = request;
 
-    // Log message coming from the `request` parameter
-    console.log(request.payload.message);
-    // Send a response message
-    sendResponse({
-      message,
+  if (isDict === false)
+    fetch('https://openapi.naver.com/v1/papago/n2mt', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Naver-Client-Id': PAPAGO_CLIENT_ID,
+        'X-Naver-Client-Secret': PAPAGO_CLIENT_SECRET,
+      },
+      body: JSON.stringify({
+        source: 'en',
+        target: 'ko',
+        text: msg,
+      }),
+    }).then((res) => {
+      if (res.status === 200) {
+        res.text().then((text) => {
+          const obj = JSON.parse(text);
+
+          sendResponse({
+            status: res.status,
+            body: obj.message.result.translatedText,
+          });
+        });
+      } else {
+        sendResponse({
+          status: res.status,
+          body: '',
+        });
+      }
+    });
+  else {
+    handleHasDocument().then(async (hasDocument) => {
+      if (!hasDocument) {
+        await chrome.offscreen.createDocument({
+          url: DOM_PARSER_OFFSCREEN_PATH,
+          reasons: [chrome.offscreen.Reason.DOM_PARSER],
+          justification: 'Parse DOM',
+        });
+
+        chrome.runtime.sendMessage(msg);
+      } else {
+        await chrome.offscreen.closeDocument();
+
+        chrome.tabs.query({ active: true, currentWindow: true }, (pages) => {
+          chrome.tabs.sendMessage(pages[0].id, {
+            status,
+            body: results,
+          });
+        });
+      }
     });
   }
+
+  return true;
 });
+
+async function handleHasDocument() {
+  const matchedClients = await clients.matchAll();
+  for (const client of matchedClients) {
+    if (client.url.endsWith(DOM_PARSER_OFFSCREEN_PATH)) {
+      return true;
+    }
+  }
+  return false;
+}
