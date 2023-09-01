@@ -7,6 +7,7 @@
 > 평소 어려워하는 영어 구문을 모아서 공부하려는 목적<br/>
 > 단순히 Papago API를 이용한 구문 번역이 아닌 LLAMA2를 이용하여 번역시킬 계획<br/>
 > Fast API Backend Framework 연동 및 Llama2 모델을 사용하여 다양한 기능 구현 계획<br/>
+> 기존 v2 프로젝트 https://github.com/withbbang/chrome-extension
 
 ---
 
