@@ -1,4 +1,4 @@
-# 단어 사전 & 구문 번역 & 저장 크롬 확장 프로그램
+# <img src="public/icons/icon_1_96.png" width="45" align="left"> 단어 사전 & 구문 번역 & 저장 크롬 확장 프로그램
 
 ### 프로젝트 목적
 
