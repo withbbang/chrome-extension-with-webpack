@@ -1,6 +1,6 @@
 import { PAPAGO_CLIENT_ID, PAPAGO_CLIENT_SECRET } from './env.js';
 
-const DOM_PARSER_OFFSCREEN_PATH = 'domParser.html';
+const DOM_PARSER_OFFSCREEN_PATH = 'domParserOffscreen.html';
 
 chrome.commands.onCommand.addListener((command) => {
   chrome.storage.local.get(['isDict'], (result) => {
