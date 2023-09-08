@@ -3,20 +3,6 @@
 let posX = null;
 let posY = null;
 let target = null;
-const platform = (function handleGetPlatform() {
-  if (!('navigator' in window)) {
-    return;
-  }
-
-  const platform = (
-    navigator.userAgentData?.platform || navigator.platform
-  )?.toLowerCase();
-
-  if (platform.startsWith('win')) return 'windows';
-  if (platform.startsWith('mac')) return 'mac';
-  if (platform.startsWith('linux')) return 'linux';
-  return;
-})();
 
 const reqMessage = (e) => {
   const msg = window.getSelection().toString();
@@ -26,14 +12,23 @@ const reqMessage = (e) => {
 
   chrome.storage.local.get(['isDict'], (result) => {
     chrome.runtime.sendMessage({ msg, isDict: result.isDict }, (res) => {
-      const { status, body } = res;
+      let status, body;
+      res && ({ status, body } = res);
       handleDisplayContents(status, body, target);
     });
   });
 };
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const { status, body } = request;
+  let status, body, isDict, command, sourceLang, targetLang;
+  request &&
+    ({ status, body, isDict, command, sourceLang, targetLang } = request);
+
+  if (command) {
+    handleFadeInOut(command, sourceLang, targetLang, isDict);
+    return;
+  }
+
   handleDisplayContents(status, body, target);
 });
 
@@ -60,11 +55,6 @@ function handleDisplayContents(status, body, target) {
       li.textContent = body;
       ul.appendChild(li);
     }
-
-    div.style.zIndex = '9999999999999999999';
-    div.style.position = 'absolute';
-    div.style.backgroundColor = '#eee';
-    div.style.padding = '5px';
 
     div.style.top = `${
       parseInt(posY + window.scrollY + target.style.height) + 15
@@ -94,17 +84,34 @@ function handleDisplayContents(status, body, target) {
   }
 }
 
-document.onkeydown = (e) => {
-  switch (platform) {
-    case 'windows':
-      e.ctrlKey && e.altKey && reqMessage(e);
-      break;
-    case 'mac':
-      e.metaKey && e.ctrlKey && reqMessage(e);
-      break;
-    default:
-      break;
+function handleFadeInOut(command, sourceLang, targetLang, isDict) {
+  const animationTime = 1000;
+  const span = document.createElement('span');
+  span.classList.add('alert-chrome-extension');
+  span.setAttribute('id', 'alert-chrome-extension');
+
+  if (command === 'toggle_command') {
+    if (isDict) span.innerText = '사전';
+    else span.innerText = '번역';
+  } else {
+    span.innerText = `${sourceLang.toUpperCase()} -> ${targetLang.toUpperCase()}`;
   }
+
+  span.classList.add('fade-in');
+  document.body.appendChild(span);
+
+  setTimeout(() => {
+    span.classList.remove('fade-in');
+    span.classList.add('fade-out');
+  }, animationTime);
+
+  setTimeout(() => {
+    span.remove();
+  }, 2 * animationTime);
+}
+
+document.onkeydown = (e) => {
+  e.metaKey && e.ctrlKey && reqMessage(e);
 };
 
 document.onmouseup = (e) => {

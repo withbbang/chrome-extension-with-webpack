@@ -1,11 +1,36 @@
 import { PAPAGO_CLIENT_ID, PAPAGO_CLIENT_SECRET } from './env.js';
 
-const DOM_PARSER_OFFSCREEN_PATH = 'domParserOffscreen.html';
+let sourceLang = 'en';
+let targetLang = 'ko';
 
-chrome.commands.onCommand.addListener((command) => {
-  chrome.storage.local.get(['isDict'], (result) => {
-    if (result.isDict === false) chrome.storage.local.set({ isDict: true });
-    else chrome.storage.local.set({ isDict: false });
+const OFFSCREEN_DOCUMENT_PATH = 'offscreen.html';
+
+function handleChangeLang() {
+  const tmp = targetLang;
+  targetLang = sourceLang;
+  sourceLang = tmp;
+}
+
+chrome.commands.onCommand.addListener(async (command) => {
+  let isDict = false;
+
+  if (command === 'toggle_command') {
+    let result = await chrome.storage.local.get(['isDict']);
+    isDict = !result.isDict;
+    chrome.storage.local.set({ isDict });
+  } else {
+    handleChangeLang();
+  }
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (pages) => {
+    chrome.tabs.sendMessage(pages[0].id, {
+      status: 200,
+      body: '',
+      isDict,
+      command,
+      sourceLang,
+      targetLang,
+    });
   });
 });
 
@@ -21,8 +46,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         'X-Naver-Client-Secret': PAPAGO_CLIENT_SECRET,
       },
       body: JSON.stringify({
-        source: 'en',
-        target: 'ko',
+        source: sourceLang,
+        target: targetLang,
         text: msg,
       }),
     }).then((res) => {
@@ -46,7 +71,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleHasDocument().then(async (hasDocument) => {
       if (!hasDocument) {
         await chrome.offscreen.createDocument({
-          url: DOM_PARSER_OFFSCREEN_PATH,
+          url: OFFSCREEN_DOCUMENT_PATH,
           reasons: [chrome.offscreen.Reason.DOM_PARSER],
           justification: 'Parse DOM',
         });
@@ -68,10 +93,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return true;
 });
 
+async function handleCloseOffscreenDocument() {
+  if (!(await handleHasDocument())) {
+    return;
+  }
+
+  await chrome.offscreen.closeDocument();
+}
+
 async function handleHasDocument() {
   const matchedClients = await clients.matchAll();
   for (const client of matchedClients) {
-    if (client.url.endsWith(DOM_PARSER_OFFSCREEN_PATH)) {
+    if (client.url.endsWith(OFFSCREEN_DOCUMENT_PATH)) {
       return true;
     }
   }

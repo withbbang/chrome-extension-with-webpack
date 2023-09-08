@@ -34,6 +34,13 @@
         "mac": "Ctrl + Q"
       },
       "description": "Toggle Command"
+    },
+    "change_lang_command": {
+      "suggested_key": {
+        "default": "Ctrl + E",
+        "mac": "Ctrl + E"
+      },
+      "description": "Change Language Command"
     }
   }
 }
