@@ -70,4 +70,13 @@ CHROME-EXTENSION-WITH-WEBPACK
 
 ---
 
+### 사용법
+
+- public/manifest.json에서 OS별 commands 설정<br>
+- Default
+  > - 사전 <-> 번역 변경 커맨드: Ctrl + Q
+  > - 한국어 <-> 영어 변경 커맨드: Ctrl + E
+
+---
+
 ### 구현화면
