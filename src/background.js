@@ -3,7 +3,7 @@ import { PAPAGO_CLIENT_ID, PAPAGO_CLIENT_SECRET } from './env.js';
 let sourceLang = 'en';
 let targetLang = 'ko';
 
-const OFFSCREEN_DOCUMENT_PATH = 'offscreen.html';
+const OFFSCREEN_DOCUMENT_PATH = 'domParserOffscreen.html';
 
 function handleChangeLang() {
   const tmp = targetLang;
